@@ -4,54 +4,61 @@
 //!
 //! Visit the [Getting Started](https://succinctlabs.github.io/sp1/getting-started.html) section
 //! in the official SP1 documentation for a quick start guide.
-
+#[cfg(feature = "proving-logic")]
 pub mod action;
+#[cfg(feature = "proving-logic")]
 pub mod artifacts;
+#[cfg(feature = "proving-logic")]
 pub mod install;
+#[cfg(feature = "proving-logic")]
+pub mod proof;
+#[cfg(feature = "proving-logic")]
+pub mod provers;
+#[cfg(feature = "proving-logic")]
+pub mod utils {
+    pub use sp1_core_machine::utils::setup_logger;
+}
 #[cfg(feature = "network")]
 pub mod network;
 #[cfg(feature = "network-v2")]
 #[path = "network-v2/mod.rs"]
 pub mod network_v2;
+#[cfg(feature = "execution-logic")]
+pub mod executor_client;
+
 #[cfg(feature = "network")]
 pub use crate::network::prover::NetworkProver as NetworkProverV1;
 #[cfg(feature = "network-v2")]
 pub use crate::network_v2::prover::NetworkProver as NetworkProverV2;
 #[cfg(feature = "cuda")]
 pub use crate::provers::CudaProver;
-
-pub mod proof;
-pub mod provers;
-pub mod utils {
-    pub use sp1_core_machine::utils::setup_logger;
-}
-
 use cfg_if::cfg_if;
+#[cfg(feature = "proving-logic")]
 pub use proof::*;
-pub use provers::SP1VerificationError;
+#[cfg(feature = "proving-logic")]
 use sp1_prover::components::DefaultProverComponents;
-
+#[cfg(feature = "proving-logic")]
 use std::env;
 
 #[cfg(any(feature = "network", feature = "network-v2"))]
 use {std::future::Future, tokio::task::block_in_place};
-
-pub use provers::{CpuProver, MockProver, Prover};
-
-pub use sp1_core_executor::{ExecutionReport, HookEnv, SP1Context, SP1ContextBuilder};
+#[cfg(feature = "proving-logic")]
+pub use provers::{SP1VerificationError, CpuProver, MockProver, Prover};
+#[cfg(feature = "proving-logic")]
 pub use sp1_core_machine::{io::SP1Stdin, riscv::cost::CostEstimator, SP1_CIRCUIT_VERSION};
-pub use sp1_primitives::io::SP1PublicValues;
-pub use sp1_prover::{
-    CoreSC, HashableKey, InnerSC, OuterSC, PlonkBn254Proof, SP1Prover, SP1ProvingKey,
-    SP1VerifyingKey,
-};
+#[cfg(feature = "cuda")]
+pub use sp1_prover::SP1Prover;
+#[cfg(feature = "proving-logic")]
+pub use sp1_prover::{SP1ProvingKey, SP1VerifyingKey};
 
 /// A client for interacting with SP1.
+#[cfg(feature = "proving-logic")]
 pub struct ProverClient {
     /// The underlying prover implementation.
     pub prover: Box<dyn Prover<DefaultProverComponents>>,
 }
 
+#[cfg(feature = "proving-logic")]
 impl ProverClient {
     /// Creates a new [ProverClient].
     ///
@@ -187,6 +194,7 @@ impl ProverClient {
     /// // Execute the program on the inputs.
     /// let (public_values, report) = client.execute(elf, stdin).run().unwrap();
     /// ```
+    #[cfg(feature = "execution-logic")]
     pub fn execute<'a>(&'a self, elf: &'a [u8], stdin: SP1Stdin) -> action::Execute<'a> {
         action::Execute::new(self.prover.as_ref(), elf, stdin)
     }
@@ -220,6 +228,7 @@ impl ProverClient {
     /// // Generate the proof.
     /// let proof = client.prove(&pk, stdin).run().unwrap();
     /// ```
+    #[cfg(feature = "proving-logic")]
     pub fn prove<'a>(&'a self, pk: &'a SP1ProvingKey, stdin: SP1Stdin) -> action::Prove<'a> {
         action::Prove::new(self.prover.as_ref(), pk, stdin)
     }
@@ -239,6 +248,7 @@ impl ProverClient {
     /// let proof = client.prove(&pk, stdin).run().unwrap();
     /// client.verify(&proof, &vk).unwrap();
     /// ```
+    #[cfg(feature = "proving-logic")]
     pub fn verify(
         &self,
         proof: &SP1ProofWithPublicValues,
@@ -270,11 +280,12 @@ impl ProverClient {
     /// stdin.write(&10usize);
     /// let (pk, vk) = client.setup(elf);
     /// ```
+    #[cfg(feature = "proving-logic")]
     pub fn setup(&self, elf: &[u8]) -> (SP1ProvingKey, SP1VerifyingKey) {
         self.prover.setup(elf)
     }
 }
-
+#[cfg(feature = "proving-logic")]
 impl Default for ProverClient {
     fn default() -> Self {
         Self::new()
@@ -315,12 +326,11 @@ macro_rules! include_elf {
 
 #[cfg(test)]
 mod tests {
-
-    use sp1_primitives::io::SP1PublicValues;
-
+    #[cfg(feature = "proving-logic")]
     use crate::{utils, CostEstimator, ProverClient, SP1Stdin};
 
     #[test]
+    #[cfg(feature = "proving-logic")]
     fn test_execute() {
         utils::setup_logger();
         let client = ProverClient::local();
@@ -334,6 +344,7 @@ mod tests {
 
     #[test]
     #[should_panic]
+    #[cfg(feature = "proving-logic")]
     fn test_execute_panic() {
         utils::setup_logger();
         let client = ProverClient::local();
@@ -345,6 +356,7 @@ mod tests {
 
     #[should_panic]
     #[test]
+    #[cfg(feature = "proving-logic")]
     fn test_cycle_limit_fail() {
         utils::setup_logger();
         let client = ProverClient::local();
@@ -355,6 +367,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "proving-logic")]
     fn test_e2e_core() {
         utils::setup_logger();
         let client = ProverClient::local();
@@ -376,6 +389,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "proving-logic")]
     fn test_e2e_compressed() {
         utils::setup_logger();
         let client = ProverClient::local();
@@ -397,6 +411,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "proving-logic")]
     fn test_e2e_prove_plonk() {
         utils::setup_logger();
         let client = ProverClient::local();
@@ -418,6 +433,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "proving-logic")]
     fn test_e2e_prove_plonk_mock() {
         utils::setup_logger();
         let client = ProverClient::mock();
