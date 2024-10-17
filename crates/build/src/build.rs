@@ -165,7 +165,7 @@ fn generate_elf_paths(
         }) {
             // Filter out irrelevant targets if `--bin` is used.
             if let Some(args) = args {
-                if !args.binary.contains(&bin_target.name) {
+                if !args.binary.is_empty() && !args.binary.contains(&bin_target.name) {
                     continue;
                 }
             }
