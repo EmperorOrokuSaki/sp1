@@ -119,21 +119,53 @@ fn generate_elf_paths(
     metadata: &cargo_metadata::Metadata,
     args: Option<&BuildArgs>,
 ) -> Result<Vec<(String, Utf8PathBuf)>> {
+    let packages_to_build: Vec<&cargo_metadata::Package> =
+        if let Some(args) = args {
+            if !args.package.is_empty() {
+                args.package
+                    .iter()
+                    .map(|package_name| {
+                        metadata.packages.iter().find(|pkg| &pkg.name == package_name).ok_or_else(
+                            || anyhow::anyhow!("Package '{}' not found in workspace", package_name),
+                        )
+                    })
+                    .collect::<Result<Vec<&cargo_metadata::Package>>>()?
+            } else {
+                // Fallback to building default workspace members if --package is not provided
+                metadata
+                    .workspace_default_members
+                    .iter()
+                    .map(|program_crate| {
+                        metadata.packages.iter().find(|p| &p.id == program_crate).ok_or_else(|| {
+                            anyhow::anyhow!("cannot find package for {}", program_crate)
+                        })
+                    })
+                    .collect::<Result<Vec<&cargo_metadata::Package>>>()?
+            }
+        } else {
+            // Fallback for when args is None
+            metadata
+                .workspace_default_members
+                .iter()
+                .map(|program_crate| {
+                    metadata
+                        .packages
+                        .iter()
+                        .find(|p| &p.id == program_crate)
+                        .ok_or_else(|| anyhow::anyhow!("cannot find package for {}", program_crate))
+                })
+                .collect::<Result<Vec<&cargo_metadata::Package>>>()?
+        };
+
     let mut target_elf_paths = vec![];
 
-    for program_crate in metadata.workspace_default_members.iter() {
-        let program = metadata
-            .packages
-            .iter()
-            .find(|p| &p.id == program_crate)
-            .ok_or_else(|| anyhow::anyhow!("cannot find package for {}", program_crate))?;
-
-        for bin_target in program.targets.iter().filter(|t| {
+    for package in packages_to_build {
+        for bin_target in package.targets.iter().filter(|t| {
             t.kind.contains(&"bin".to_owned()) && t.crate_types.contains(&"bin".to_owned())
         }) {
             // Filter out irrelevant targets if `--bin` is used.
             if let Some(args) = args {
-                if !args.binary.is_empty() && bin_target.name != args.binary {
+                if !args.binary.contains(&bin_target.name) {
                     continue;
                 }
             }

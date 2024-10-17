@@ -4,7 +4,7 @@ mod utils;
 use build::build_program_internal;
 pub use build::execute_build_program;
 
-use clap::Parser;
+use clap::{ArgAction, Parser};
 
 const BUILD_TARGET: &str = "riscv32im-succinct-zkvm-elf";
 const DEFAULT_TAG: &str = "latest";
@@ -53,13 +53,15 @@ pub struct BuildArgs {
     #[clap(
         alias = "bin",
         long,
-        action,
-        help = "Build only the specified binary",
-        default_value = ""
+        action = ArgAction::Append,
+        num_args(1),
+        help = "Build the specified binary. This flag may be specified multiple times.",
     )]
-    pub binary: String,
+    pub binary: Vec<String>,
     #[clap(long, action, help = "ELF binary name", default_value = "")]
     pub elf_name: String,
+    #[clap(long, short, action = ArgAction::Append, num_args(1), help = "Package to build. This flag may be specified multiple times.")]
+    pub package: Vec<String>,
     #[clap(
         alias = "out-dir",
         long,
@@ -79,7 +81,8 @@ impl Default for BuildArgs {
             features: vec![],
             rustflags: vec![],
             ignore_rust_version: false,
-            binary: "".to_string(),
+            binary: vec![],
+            package: vec![],
             elf_name: "".to_string(),
             output_directory: DEFAULT_OUTPUT_DIR.to_string(),
             locked: false,

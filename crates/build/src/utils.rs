@@ -20,7 +20,7 @@ pub(crate) fn copy_elf_to_output_dir(
     } else if !args.binary.is_empty() {
         // TODO: In the future, change this to default to the package name. Will require updating
         // docs and examples.
-        args.binary.clone()
+        args.binary[0].clone()
     } else {
         BUILD_TARGET.to_string()
     };
