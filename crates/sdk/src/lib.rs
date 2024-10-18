@@ -14,10 +14,11 @@ pub mod install;
 pub mod proof;
 #[cfg(feature = "proving-logic")]
 pub mod provers;
-#[cfg(feature = "proving-logic")]
+
 pub mod utils {
     pub use sp1_core_machine::utils::setup_logger;
 }
+
 #[cfg(feature = "network")]
 pub mod network;
 #[cfg(feature = "network-v2")]
@@ -44,8 +45,10 @@ use std::env;
 use {std::future::Future, tokio::task::block_in_place};
 #[cfg(feature = "proving-logic")]
 pub use provers::{SP1VerificationError, CpuProver, MockProver, Prover};
-#[cfg(feature = "proving-logic")]
+// #[cfg(feature = "proving-logic")]
+
 pub use sp1_core_machine::{io::SP1Stdin, riscv::cost::CostEstimator, SP1_CIRCUIT_VERSION};
+
 #[cfg(feature = "cuda")]
 pub use sp1_prover::SP1Prover;
 #[cfg(feature = "proving-logic")]
